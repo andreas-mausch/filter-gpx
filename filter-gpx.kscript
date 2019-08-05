@@ -1,0 +1,5 @@
+#!/usr/bin/env kscript
+
+@file:DependsOn("io.jenetics:jpx:1.5.2")
+
+println("Hallo")

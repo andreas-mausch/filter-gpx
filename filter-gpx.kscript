@@ -7,33 +7,37 @@ import java.time.Duration
 import java.time.Duration.between
 
 fun isInArea(point: Point): Boolean {
-    return point.latitude.toDouble() >= 53.558523
-        && point.latitude.toDouble() <= 53.559132
-        && point.longitude.toDouble() >= 9.930380
-        && point.longitude.toDouble() <= 9.931356
+    return point.latitude.toDouble() >= 53.557766
+        && point.latitude.toDouble() <= 53.559691
+        && point.longitude.toDouble() >= 9.928761
+        && point.longitude.toDouble() <= 9.932033
 }
 
-fun durationInArea(points: List<Point>): Duration {
+fun durationInArea(points: List<Point>): List<Pair<Point,Point>> {
     val sortedPoints = points.toMutableList()
     sortedPoints.sortBy { it.time.get() }
 
-    var duration = Duration.ofSeconds(0)
     var entryPoint: Point? = null
+    var pairs = mutableListOf<Pair<Point, Point>>()
 
     sortedPoints.forEach {
         if (entryPoint == null && isInArea(it)) {
             entryPoint = it
         } else if (entryPoint != null && !isInArea(it)) {
-            duration = duration.plus(between(entryPoint!!.time.get(), it.time.get()))
+            pairs.add(Pair(entryPoint!!, it))
             entryPoint = null
         }
     }
 
     if (entryPoint != null) {
-        duration = duration.plus(between(entryPoint!!.time.get(), sortedPoints.last().time.get()))
+        pairs.add(Pair(entryPoint!!, sortedPoints.last()))
     }
 
-    return duration
+    return pairs
+}
+
+fun Iterable<Duration>.sum(): Duration {
+    return this.fold(Duration.ofSeconds(0)) { sum, element -> sum.plus(element) }
 }
 
 val track = GPX.reader(GPX.Version.V10)
@@ -44,4 +48,8 @@ val track = GPX.reader(GPX.Version.V10)
 val points = track.flatMap { it.segments }.flatMap { it.points }
 val groupedByDate = points.groupBy { it.time.get().toLocalDate() }
 
-groupedByDate.forEach { println("${it.key}: ${durationInArea(it.value)} (${it.value.size} Points)") }
+groupedByDate.forEach {
+    val pairs = durationInArea(it.value)
+    val duration = pairs.map { between(it.first.time.get(), it.second.time.get()) }.sum()
+    println("${it.key}: ${duration} (${it.value.size} Points)")
+}

@@ -3,9 +3,34 @@
 @file:DependsOn("io.jenetics:jpx:1.5.2")
 
 import io.jenetics.jpx.*
+import java.time.Duration
+import java.time.Duration.between
 
-fun timeInArea(points: List<Point>): Double {
-    return 0.0
+fun isInArea(point: Point): Boolean {
+    return true
+}
+
+fun durationInArea(points: List<Point>): Duration {
+    val sortedPoints = points.toMutableList()
+    sortedPoints.sortBy { it.time.get() }
+
+    var duration = Duration.ofSeconds(0)
+    var entryPoint: Point? = null
+
+    sortedPoints.forEach {
+        if (entryPoint == null && isInArea(it)) {
+            entryPoint = it
+        } else if (entryPoint != null && !isInArea(it)) {
+            duration = duration.plus(between(entryPoint!!.time.get(), it.time.get()))
+            entryPoint = null
+        }
+    }
+
+    if (entryPoint != null) {
+        duration = duration.plus(between(entryPoint!!.time.get(), sortedPoints.last().time.get()))
+    }
+
+    return duration
 }
 
 val track = GPX.reader(GPX.Version.V10)
@@ -15,6 +40,6 @@ val track = GPX.reader(GPX.Version.V10)
 
 val points = track.flatMap { it.segments }.flatMap { it.points }
 val groupedByDate = points.groupBy { it.time.get().toLocalDate() }
-val times = groupedByDate.mapValues { timeInArea(it.value) }
+val times = groupedByDate.mapValues { durationInArea(it.value) }
 
 times.forEach { println("${it.key}: ${it.value}") }

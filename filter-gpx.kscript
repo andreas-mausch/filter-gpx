@@ -2,7 +2,11 @@
 
 @file:DependsOn("io.jenetics:jpx:1.5.2")
 
-import io.jenetics.jpx.GPX
+import io.jenetics.jpx.*
+
+fun timeInArea(points: List<Point>): Double {
+    return 0.0
+}
 
 val track = GPX.reader(GPX.Version.V10)
                .read("gpx.xml")
@@ -11,5 +15,6 @@ val track = GPX.reader(GPX.Version.V10)
 
 val points = track.flatMap { it.segments }.flatMap { it.points }
 val groupedByDate = points.groupBy { it.time.get().toLocalDate() }
+val times = groupedByDate.mapValues { timeInArea(it.value) }
 
-println("groupedByDate: " + groupedByDate.keys)
+times.forEach { println("${it.key}: ${it.value}") }

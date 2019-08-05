@@ -7,7 +7,10 @@ import java.time.Duration
 import java.time.Duration.between
 
 fun isInArea(point: Point): Boolean {
-    return true
+    return point.latitude.toDouble() >= 53.558523
+        && point.latitude.toDouble() <= 53.559132
+        && point.longitude.toDouble() >= 9.930380
+        && point.longitude.toDouble() <= 9.931356
 }
 
 fun durationInArea(points: List<Point>): Duration {
@@ -40,6 +43,5 @@ val track = GPX.reader(GPX.Version.V10)
 
 val points = track.flatMap { it.segments }.flatMap { it.points }
 val groupedByDate = points.groupBy { it.time.get().toLocalDate() }
-val times = groupedByDate.mapValues { durationInArea(it.value) }
 
-times.forEach { println("${it.key}: ${it.value}") }
+groupedByDate.forEach { println("${it.key}: ${durationInArea(it.value)} (${it.value.size} Points)") }

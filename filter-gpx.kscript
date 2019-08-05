@@ -2,4 +2,11 @@
 
 @file:DependsOn("io.jenetics:jpx:1.5.2")
 
-println("Hallo")
+import io.jenetics.jpx.GPX
+
+val track = GPX.reader(GPX.Version.V10)
+               .read("gpx.xml")
+               .tracks
+               .filter { it.name.isPresent() && it.name.get() == "SM-G973F" }
+
+println("Track: " + track)

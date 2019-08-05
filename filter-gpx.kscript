@@ -9,4 +9,7 @@ val track = GPX.reader(GPX.Version.V10)
                .tracks
                .filter { it.name.isPresent() && it.name.get() == "SM-G973F" }
 
-println("Track: " + track)
+val points = track.flatMap { it.segments }.flatMap { it.points }
+val groupedByDate = points.groupBy { it.time.get().toLocalDate() }
+
+println("groupedByDate: " + groupedByDate.keys)

@@ -40,7 +40,7 @@ fun Iterable<Duration>.sum(): Duration {
     return this.fold(Duration.ofSeconds(0)) { sum, element -> sum.plus(element) }
 }
 
-val track = GPX.reader(GPX.Version.V10)
+val track = GPX.reader(GPX.Version.V10, GPX.Reader.Mode.LENIENT)
                .read("gpx.xml")
                .tracks
                .filter { it.name.isPresent() && it.name.get() == "SM-G973F" }

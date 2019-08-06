@@ -10,7 +10,7 @@ import java.time.Duration.between
 import org.apache.commons.cli.*
 
 enum class GroupBy(val lambda: (Point) -> Any) {
-    HOURS({ it.time.get().truncatedTo(ChronoUnit.HOURS) }),
+    HOUR({ it.time.get().truncatedTo(ChronoUnit.HOURS) }),
     DAY({ it.time.get().toLocalDate() }),
     MONTH({ YearMonth.from(it.time.get().toLocalDate()) })
 }
@@ -53,7 +53,7 @@ fun parseArguments(): CommandLine {
         .hasArg()
         .type(GroupBy::class.java)
         .valueSeparator()
-        .desc("Group by either DAY (default), HOURS or MONTH")
+        .desc("Group by either DAY (default), HOUR or MONTH")
         .build()
     val hideZeros = Option.builder("hz")
         .longOpt("hideZeros")

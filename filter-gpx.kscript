@@ -3,15 +3,18 @@
 @file:DependsOn("io.jenetics:jpx:1.5.2")
 @file:DependsOn("commons-cli:commons-cli:1.4")
 @file:DependsOn("com.javadocmd:simplelatlng:1.3.1")
+@file:DependsOn("org.yaml:snakeyaml:1.24")
 
 import com.javadocmd.simplelatlng.*
 import com.javadocmd.simplelatlng.util.*
 import com.javadocmd.simplelatlng.window.*
 import io.jenetics.jpx.*
+import java.io.File
 import java.time.*
 import java.time.temporal.*
 import java.time.Duration.between
 import org.apache.commons.cli.*
+import org.yaml.snakeyaml.*
 
 enum class GroupBy(val lambda: (Point) -> Any) {
     HOUR({ it.time.get().truncatedTo(ChronoUnit.HOURS) }),
@@ -109,9 +112,36 @@ fun latLngFrom(coordinates: String): LatLng {
     return LatLng(pair.first, pair.second)
 }
 
+fun getCenter(parameter: String): LatLng {
+    fun loadLocationFromFile(): String? {
+        val file = File("./locations.yaml")
+
+        if (!file.exists()) {
+            return null
+        }
+
+        val locations: Map<String, String> = file.inputStream().use { Yaml().load(it) }
+
+        if (!(parameter in locations)) {
+            return null
+        }
+
+        return locations[parameter]
+    }
+
+    val fromFile = loadLocationFromFile()
+    val coordinates = fromFile ?: parameter
+
+    fromFile?.let {
+        println("Found location ${parameter}: ${it}")
+    }
+
+    return latLngFrom(coordinates)
+}
+
 val commandLine = parseArguments()
 val filename = commandLine.argList.first()
-val center = latLngFrom(commandLine.getOptionValue("center"))
+val center = getCenter(commandLine.getOptionValue("center"))
 val radius = commandLine.getOptionValue("radius")?.let { it.toDouble() } ?: 200.0
 val groupBy = commandLine.getOptionValue("groupBy")?.let { GroupBy.valueOf(it) } ?: GroupBy.DAY
 val hideZeros = commandLine.hasOption("hideZeros")

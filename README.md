@@ -1,6 +1,12 @@
 I want to know how much time I've spent in a specific area.
 I use it together with PhoneTrack in my Nextcloud to track myself.
 
+# Requirements
+
+You need kscript installed on your machine.
+
+# Usage
+
 The tool takes a GPX file from PhoneTrack, you enter center coordinates and a radius
 and it will tell you how much time you've spent there, grouped by day/hour/month.
 
@@ -23,3 +29,13 @@ Output will look like this:
 	Enter: 2019-07-19T08:04:07Z Leave: 2019-07-19T10:36:30Z
 	Enter: 2019-07-19T10:51:31Z Leave: 2019-07-19T17:10:05Z
 ```
+
+# locations.yaml
+
+Create a file `locations.yaml` in the same directory filter-gpx is in to give your favorite locations names:
+
+```yaml
+home: 53.1234,9.1234
+```
+
+Then, you can pass `--center=home` as parameter to filter-gpx.

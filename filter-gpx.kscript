@@ -55,11 +55,16 @@ fun parseArguments(): CommandLine {
         .valueSeparator()
         .desc("Group by either DAY (default), HOURS or MONTH")
         .build()
+    val hideZeros = Option.builder("hz")
+        .longOpt("hideZeros")
+        .desc("Hide result line if the duration within the bounds is 0secs (PT0S)")
+        .build()
 
     val options = Options()
     options.addOption(topleft)
     options.addOption(bottomright)
     options.addOption(groupBy)
+    options.addOption(hideZeros)
 
     try {
         val commandLine = parser.parse(options, args)
@@ -112,6 +117,7 @@ val commandLine = parseArguments()
 val filename = commandLine.argList.first()
 val box = Box.from(commandLine.getOptionValue("topleft"), commandLine.getOptionValue("bottomright"))
 val groupBy = commandLine.getOptionValue("groupBy")?.let { GroupBy.valueOf(it) } ?: GroupBy.DAY
+val hideZeros = commandLine.hasOption("hideZeros")
 
 val track = GPX.reader(GPX.Version.V10, GPX.Reader.Mode.LENIENT)
                .read(filename)
@@ -124,5 +130,8 @@ val groupedByDate = points.groupBy(groupBy.lambda)
 groupedByDate.forEach {
     val pairs = durationInArea(it.value, box)
     val duration = pairs.map { between(it.first.time.get(), it.second.time.get()) }.sum()
-    println("${it.key}: ${duration} (${it.value.size} Points)")
+
+    if (!hideZeros || !duration.isZero()) {
+        println("${it.key}: ${duration} (${it.value.size} Points)")
+    }
 }

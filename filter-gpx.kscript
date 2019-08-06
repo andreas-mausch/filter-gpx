@@ -48,12 +48,17 @@ fun parseArguments(): CommandLine {
         .longOpt("hideZeros")
         .desc("Hide result line if the duration within the bounds is 0secs (PT0S)")
         .build()
+    val verbose = Option.builder("v")
+        .longOpt("verbose")
+        .desc("Show details (enter/leave area timestamps)")
+        .build()
 
     val options = Options()
     options.addOption(center)
     options.addOption(radius)
     options.addOption(groupBy)
     options.addOption(hideZeros)
+    options.addOption(verbose)
 
     try {
         val commandLine = parser.parse(options, args)
@@ -110,6 +115,7 @@ val center = latLngFrom(commandLine.getOptionValue("center"))
 val radius = commandLine.getOptionValue("radius")?.let { it.toDouble() } ?: 200.0
 val groupBy = commandLine.getOptionValue("groupBy")?.let { GroupBy.valueOf(it) } ?: GroupBy.DAY
 val hideZeros = commandLine.hasOption("hideZeros")
+val verbose = commandLine.hasOption("verbose")
 
 val track = GPX.reader(GPX.Version.V10, GPX.Reader.Mode.LENIENT)
                .read(filename)
@@ -127,5 +133,11 @@ groupedByDate.forEach {
 
     if (!hideZeros || !duration.isZero()) {
         println("${it.key}: ${duration} (${it.value.size} Points)")
+
+        if (verbose) {
+            pairs.forEach {
+                println("\tEnter: ${it.first.time.get()} Leave: ${it.second.time.get()}")
+            }
+        }
     }
 }

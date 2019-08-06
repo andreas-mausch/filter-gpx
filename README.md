@@ -5,7 +5,7 @@ The tool takes a GPX file from PhoneTrack, you enter some bounding coordinates
 and it will tell you how much time you've spent there, grouped by day.
 
 ```bash
-./filter-gpx.kscript --topleft=53.1234,9.1234 --bottomright=53.4321,9.4321
+./filter-gpx.kscript --topleft=53.1234,9.1234 --bottomright=53.4321,9.4321 gpx.xml
 ```
 
 Output will look like this:

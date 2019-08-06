@@ -47,10 +47,14 @@ fun parseArguments(): CommandLine {
     options.addOption(bottomright)
 
     try {
-        return parser.parse(options, args)
+        val commandLine = parser.parse(options, args)
+        if (commandLine.argList.size != 1) {
+            throw ParseException("No filename provided.")
+        }
+        return commandLine
     } catch (e: ParseException) {
         val formatter = HelpFormatter()
-        formatter.printHelp("filter-gpx.kscript", options)
+        formatter.printHelp("filter-gpx.kscript [options] <gpx.file>", options)
         kotlin.system.exitProcess(-1)
     }
 }
@@ -90,10 +94,11 @@ fun Iterable<Duration>.sum(): Duration {
 }
 
 val commandLine = parseArguments()
+val filename = commandLine.argList.first()
 val box = Box.from(commandLine.getOptionValue("topleft"), commandLine.getOptionValue("bottomright"))
 
 val track = GPX.reader(GPX.Version.V10, GPX.Reader.Mode.LENIENT)
-               .read("gpx.xml")
+               .read(filename)
                .tracks
                .filter { it.name.isPresent() && it.name.get() == "SM-G973F" }
 

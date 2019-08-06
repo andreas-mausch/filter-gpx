@@ -2,7 +2,11 @@
 
 @file:DependsOn("io.jenetics:jpx:1.5.2")
 @file:DependsOn("commons-cli:commons-cli:1.4")
+@file:DependsOn("com.javadocmd:simplelatlng:1.3.1")
 
+import com.javadocmd.simplelatlng.*
+import com.javadocmd.simplelatlng.util.*
+import com.javadocmd.simplelatlng.window.*
 import io.jenetics.jpx.*
 import java.time.*
 import java.time.temporal.*
@@ -15,45 +19,30 @@ enum class GroupBy(val lambda: (Point) -> Any) {
     MONTH({ YearMonth.from(it.time.get().toLocalDate()) })
 }
 
-data class Box(val latitudeLeft: Double, val latitudeRight: Double, val longitudeTop: Double, val longitudeBottom: Double) {
-    companion object {
-        fun from(topleft: String, bottomright: String): Box {
-            fun split(coordinates: String): Pair<Double, Double> {
-                return coordinates.split(",").map { it.toDouble() }.zipWithNext().first()
-            }
-
-            val topleftPair = split(topleft)
-            val bottomrightPair = split(bottomright)
-            return Box(bottomrightPair.first, topleftPair.first, topleftPair.second, bottomrightPair.second)
-        }
-    }
-}
-
 fun parseArguments(): CommandLine {
     val parser: CommandLineParser = DefaultParser()
 
-    val topleft = Option.builder("tl")
-        .longOpt("topleft")
+    val center = Option.builder("c")
+        .longOpt("center")
         .hasArg()
         .required()
         .type(String::class.java)
         .valueSeparator()
-        .desc("Top-left coordinates of the bounding box. E.g. 53.123,10.543")
+        .desc("Center coordinates of the area. E.g. 53.123,10.543")
         .build()
-    val bottomright = Option.builder("br")
-        .longOpt("bottomright")
+    val radius = Option.builder("r")
+        .longOpt("radius")
         .hasArg()
-        .required()
-        .type(String::class.java)
+        .type(Double::class.java)
         .valueSeparator()
-        .desc("Bottom-right coordinates of the bounding box. E.g. 53.123,10.543")
+        .desc("Radius of the area in meters (default: 200m)")
         .build()
     val groupBy = Option.builder("g")
         .longOpt("groupBy")
         .hasArg()
         .type(GroupBy::class.java)
         .valueSeparator()
-        .desc("Group by either DAY (default), HOUR or MONTH")
+        .desc("Group by either DAY, HOUR or MONTH (default: DAY)")
         .build()
     val hideZeros = Option.builder("hz")
         .longOpt("hideZeros")
@@ -61,8 +50,8 @@ fun parseArguments(): CommandLine {
         .build()
 
     val options = Options()
-    options.addOption(topleft)
-    options.addOption(bottomright)
+    options.addOption(center)
+    options.addOption(radius)
     options.addOption(groupBy)
     options.addOption(hideZeros)
 
@@ -79,14 +68,7 @@ fun parseArguments(): CommandLine {
     }
 }
 
-fun isInArea(point: Point, box: Box): Boolean {
-    return point.latitude.toDouble() >= box.latitudeLeft
-        && point.latitude.toDouble() <= box.latitudeRight
-        && point.longitude.toDouble() >= box.longitudeTop
-        && point.longitude.toDouble() <= box.longitudeBottom
-}
-
-fun durationInArea(points: List<Point>, box: Box): List<Pair<Point,Point>> {
+fun durationInArea(points: List<Point>, window: CircularWindow): List<Pair<Point,Point>> {
     val sortedPoints = points.toMutableList()
     sortedPoints.sortBy { it.time.get() }
 
@@ -94,9 +76,9 @@ fun durationInArea(points: List<Point>, box: Box): List<Pair<Point,Point>> {
     var pairs = mutableListOf<Pair<Point, Point>>()
 
     sortedPoints.forEach {
-        if (entryPoint == null && isInArea(it, box)) {
+        if (entryPoint == null && window.contains(it)) {
             entryPoint = it
-        } else if (entryPoint != null && !isInArea(it, box)) {
+        } else if (entryPoint != null && !window.contains(it)) {
             pairs.add(Pair(entryPoint!!, it))
             entryPoint = null
         }
@@ -113,9 +95,19 @@ fun Iterable<Duration>.sum(): Duration {
     return this.fold(Duration.ofSeconds(0)) { sum, element -> sum.plus(element) }
 }
 
+fun CircularWindow.contains(point: Point): Boolean {
+    return contains(LatLng(point.latitude.toDouble(), point.longitude.toDouble()))
+}
+
+fun latLngFrom(coordinates: String): LatLng {
+    val pair = coordinates.split(",").map { it.toDouble() }.zipWithNext().first()
+    return LatLng(pair.first, pair.second)
+}
+
 val commandLine = parseArguments()
 val filename = commandLine.argList.first()
-val box = Box.from(commandLine.getOptionValue("topleft"), commandLine.getOptionValue("bottomright"))
+val center = latLngFrom(commandLine.getOptionValue("center"))
+val radius = commandLine.getOptionValue("radius")?.let { it.toDouble() } ?: 200.0
 val groupBy = commandLine.getOptionValue("groupBy")?.let { GroupBy.valueOf(it) } ?: GroupBy.DAY
 val hideZeros = commandLine.hasOption("hideZeros")
 
@@ -124,11 +116,13 @@ val track = GPX.reader(GPX.Version.V10, GPX.Reader.Mode.LENIENT)
                .tracks
                .filter { it.name.isPresent() && it.name.get() == "SM-G973F" }
 
+val window = CircularWindow(center, radius, LengthUnit.METER)
+
 val points = track.flatMap { it.segments }.flatMap { it.points }
 val groupedByDate = points.groupBy(groupBy.lambda)
 
 groupedByDate.forEach {
-    val pairs = durationInArea(it.value, box)
+    val pairs = durationInArea(it.value, window)
     val duration = pairs.map { between(it.first.time.get(), it.second.time.get()) }.sum()
 
     if (!hideZeros || !duration.isZero()) {

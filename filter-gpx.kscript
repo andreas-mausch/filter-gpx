@@ -8,8 +8,9 @@ import java.time.*
 import java.time.Duration.between
 import org.apache.commons.cli.*
 
-enum class GroupBy {
-    DAY, MONTH
+enum class GroupBy(val lambda: (Point) -> Any) {
+    DAY({ it.time.get().toLocalDate() }),
+    MONTH({ YearMonth.from(it.time.get().toLocalDate()) })
 }
 
 data class Box(val latitudeLeft: Double, val latitudeRight: Double, val longitudeTop: Double, val longitudeBottom: Double) {
@@ -101,13 +102,6 @@ fun durationInArea(points: List<Point>, box: Box): List<Pair<Point,Point>> {
     return pairs
 }
 
-fun group(by: GroupBy): (Point) -> Any {
-    return when (by) {
-        GroupBy.DAY -> return { it.time.get().toLocalDate() }
-        GroupBy.MONTH -> return { YearMonth.from(it.time.get().toLocalDate()) }
-    }
-}
-
 fun Iterable<Duration>.sum(): Duration {
     return this.fold(Duration.ofSeconds(0)) { sum, element -> sum.plus(element) }
 }
@@ -123,7 +117,7 @@ val track = GPX.reader(GPX.Version.V10, GPX.Reader.Mode.LENIENT)
                .filter { it.name.isPresent() && it.name.get() == "SM-G973F" }
 
 val points = track.flatMap { it.segments }.flatMap { it.points }
-val groupedByDate = points.groupBy(group(groupBy))
+val groupedByDate = points.groupBy(groupBy.lambda)
 
 groupedByDate.forEach {
     val pairs = durationInArea(it.value, box)

@@ -5,10 +5,12 @@
 
 import io.jenetics.jpx.*
 import java.time.*
+import java.time.temporal.*
 import java.time.Duration.between
 import org.apache.commons.cli.*
 
 enum class GroupBy(val lambda: (Point) -> Any) {
+    HOURS({ it.time.get().truncatedTo(ChronoUnit.HOURS) }),
     DAY({ it.time.get().toLocalDate() }),
     MONTH({ YearMonth.from(it.time.get().toLocalDate()) })
 }
@@ -51,7 +53,7 @@ fun parseArguments(): CommandLine {
         .hasArg()
         .type(GroupBy::class.java)
         .valueSeparator()
-        .desc("Group by either DAY (default) or MONTH")
+        .desc("Group by either DAY (default), HOURS or MONTH")
         .build()
 
     val options = Options()

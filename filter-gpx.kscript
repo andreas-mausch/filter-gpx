@@ -4,9 +4,13 @@
 @file:DependsOn("commons-cli:commons-cli:1.4")
 
 import io.jenetics.jpx.*
-import java.time.Duration
+import java.time.*
 import java.time.Duration.between
 import org.apache.commons.cli.*
+
+enum class GroupBy {
+    DAY, MONTH
+}
 
 data class Box(val latitudeLeft: Double, val latitudeRight: Double, val longitudeTop: Double, val longitudeBottom: Double) {
     companion object {
@@ -41,10 +45,18 @@ fun parseArguments(): CommandLine {
         .valueSeparator()
         .desc("Bottom-right coordinates of the bounding box. E.g. 53.123,10.543")
         .build()
+    val groupBy = Option.builder("g")
+        .longOpt("groupBy")
+        .hasArg()
+        .type(GroupBy::class.java)
+        .valueSeparator()
+        .desc("Group by either DAY or MONTH")
+        .build()
 
     val options = Options()
     options.addOption(topleft)
     options.addOption(bottomright)
+    options.addOption(groupBy)
 
     try {
         val commandLine = parser.parse(options, args)
@@ -89,6 +101,10 @@ fun durationInArea(points: List<Point>, box: Box): List<Pair<Point,Point>> {
     return pairs
 }
 
+fun group(by: GroupBy): (Point) -> LocalDate {
+    return { it.time.get().toLocalDate() }
+}
+
 fun Iterable<Duration>.sum(): Duration {
     return this.fold(Duration.ofSeconds(0)) { sum, element -> sum.plus(element) }
 }
@@ -96,6 +112,7 @@ fun Iterable<Duration>.sum(): Duration {
 val commandLine = parseArguments()
 val filename = commandLine.argList.first()
 val box = Box.from(commandLine.getOptionValue("topleft"), commandLine.getOptionValue("bottomright"))
+val groupBy = commandLine.getOptionValue("groupBy")?.let { GroupBy.valueOf(it) } ?: GroupBy.DAY
 
 val track = GPX.reader(GPX.Version.V10, GPX.Reader.Mode.LENIENT)
                .read(filename)
@@ -103,7 +120,7 @@ val track = GPX.reader(GPX.Version.V10, GPX.Reader.Mode.LENIENT)
                .filter { it.name.isPresent() && it.name.get() == "SM-G973F" }
 
 val points = track.flatMap { it.segments }.flatMap { it.points }
-val groupedByDate = points.groupBy { it.time.get().toLocalDate() }
+val groupedByDate = points.groupBy(group(groupBy))
 
 groupedByDate.forEach {
     val pairs = durationInArea(it.value, box)

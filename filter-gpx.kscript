@@ -1,19 +1,68 @@
 #!/usr/bin/env kscript
 
 @file:DependsOn("io.jenetics:jpx:1.5.2")
+@file:DependsOn("commons-cli:commons-cli:1.4")
 
 import io.jenetics.jpx.*
 import java.time.Duration
 import java.time.Duration.between
+import org.apache.commons.cli.*
 
-fun isInArea(point: Point): Boolean {
-    return point.latitude.toDouble() >= 53.557766
-        && point.latitude.toDouble() <= 53.559691
-        && point.longitude.toDouble() >= 9.928761
-        && point.longitude.toDouble() <= 9.932033
+data class Box(val latitudeLeft: Double, val latitudeRight: Double, val longitudeTop: Double, val longitudeBottom: Double) {
+    companion object {
+        fun from(topleft: String, bottomright: String): Box {
+            fun split(coordinates: String): Pair<Double, Double> {
+                return coordinates.split(",").map { it.toDouble() }.zipWithNext().first()
+            }
+
+            val topleftPair = split(topleft)
+            val bottomrightPair = split(bottomright)
+            return Box(bottomrightPair.first, topleftPair.first, topleftPair.second, bottomrightPair.second)
+        }
+    }
 }
 
-fun durationInArea(points: List<Point>): List<Pair<Point,Point>> {
+fun parseArguments(): CommandLine {
+    val parser: CommandLineParser = DefaultParser()
+
+    val topleft = Option.builder("tl")
+        .longOpt("topleft")
+        .hasArg()
+        .required()
+        .type(String::class.java)
+        .valueSeparator()
+        .desc("Top-left coordinates of the bounding box. E.g. 53.123,10.543")
+        .build()
+    val bottomright = Option.builder("br")
+        .longOpt("bottomright")
+        .hasArg()
+        .required()
+        .type(String::class.java)
+        .valueSeparator()
+        .desc("Bottom-right coordinates of the bounding box. E.g. 53.123,10.543")
+        .build()
+
+    val options = Options()
+    options.addOption(topleft)
+    options.addOption(bottomright)
+
+    try {
+        return parser.parse(options, args)
+    } catch (e: ParseException) {
+        val formatter = HelpFormatter()
+        formatter.printHelp("filter-gpx.kscript", options)
+        kotlin.system.exitProcess(-1)
+    }
+}
+
+fun isInArea(point: Point, box: Box): Boolean {
+    return point.latitude.toDouble() >= box.latitudeLeft
+        && point.latitude.toDouble() <= box.latitudeRight
+        && point.longitude.toDouble() >= box.longitudeTop
+        && point.longitude.toDouble() <= box.longitudeBottom
+}
+
+fun durationInArea(points: List<Point>, box: Box): List<Pair<Point,Point>> {
     val sortedPoints = points.toMutableList()
     sortedPoints.sortBy { it.time.get() }
 
@@ -21,9 +70,9 @@ fun durationInArea(points: List<Point>): List<Pair<Point,Point>> {
     var pairs = mutableListOf<Pair<Point, Point>>()
 
     sortedPoints.forEach {
-        if (entryPoint == null && isInArea(it)) {
+        if (entryPoint == null && isInArea(it, box)) {
             entryPoint = it
-        } else if (entryPoint != null && !isInArea(it)) {
+        } else if (entryPoint != null && !isInArea(it, box)) {
             pairs.add(Pair(entryPoint!!, it))
             entryPoint = null
         }
@@ -40,6 +89,9 @@ fun Iterable<Duration>.sum(): Duration {
     return this.fold(Duration.ofSeconds(0)) { sum, element -> sum.plus(element) }
 }
 
+val commandLine = parseArguments()
+val box = Box.from(commandLine.getOptionValue("topleft"), commandLine.getOptionValue("bottomright"))
+
 val track = GPX.reader(GPX.Version.V10, GPX.Reader.Mode.LENIENT)
                .read("gpx.xml")
                .tracks
@@ -49,7 +101,7 @@ val points = track.flatMap { it.segments }.flatMap { it.points }
 val groupedByDate = points.groupBy { it.time.get().toLocalDate() }
 
 groupedByDate.forEach {
-    val pairs = durationInArea(it.value)
+    val pairs = durationInArea(it.value, box)
     val duration = pairs.map { between(it.first.time.get(), it.second.time.get()) }.sum()
     println("${it.key}: ${duration} (${it.value.size} Points)")
 }

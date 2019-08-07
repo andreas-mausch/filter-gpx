@@ -118,6 +118,19 @@ fun ZonedDateTime.format(): String {
     return localizedDateTime.format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"))
 }
 
+fun Duration.format(): String {
+    if (toDays() > 0) {
+        return "%dd %02dh %02dm %02ds".format(toDays(), toHours() % 24, toMinutes() % 60, seconds % 60)
+    }
+    if (toHours() > 0) {
+        return "%02dh %02dm %02ds".format(toHours() % 24, toMinutes() % 60, seconds % 60)
+    }
+    if (toMinutes() > 0) {
+        return "%02dm %02ds".format(toMinutes() % 60, seconds % 60)
+    }
+    return "%02ds".format(seconds)
+}
+
 fun getCenter(parameter: String): LatLng {
     fun loadLocationFromFile(): String? {
         val file = File("./locations.yaml")
@@ -168,7 +181,7 @@ groupedByDate.forEach {
     val duration = pairs.map { between(it.first.time.get(), it.second.time.get()) }.sum()
 
     if (!hideZeros || !duration.isZero()) {
-        println("${it.key}: ${duration} (${it.value.size} Points)")
+        println("${it.key}: ${duration.format()} (${it.value.size} Points)")
 
         if (verbose) {
             pairs.forEach {

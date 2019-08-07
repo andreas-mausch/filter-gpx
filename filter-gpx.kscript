@@ -114,7 +114,8 @@ fun latLngFrom(coordinates: String): LatLng {
 }
 
 fun ZonedDateTime.format(): String {
-    return format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"))
+    val localizedDateTime = this.withZoneSameInstant(ZoneId.systemDefault())
+    return localizedDateTime.format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"))
 }
 
 fun getCenter(parameter: String): LatLng {

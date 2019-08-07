@@ -82,7 +82,7 @@ fun durationInArea(points: List<Point>, window: CircularWindow): List<Pair<Point
     sortedPoints.sortBy { it.time.get() }
 
     var entryPoint: Point? = null
-    var pairs = mutableListOf<Pair<Point, Point>>()
+    val pairs = mutableListOf<Pair<Point, Point>>()
 
     sortedPoints.forEach {
         if (entryPoint == null && window.contains(it)) {
@@ -141,7 +141,7 @@ fun getCenter(parameter: String): LatLng {
 
         val locations: Map<String, String> = file.inputStream().use { Yaml().load(it) }
 
-        if (!(parameter in locations)) {
+        if (parameter !in locations) {
             return null
         }
 
@@ -159,9 +159,9 @@ fun getCenter(parameter: String): LatLng {
 }
 
 val commandLine = parseArguments()
-val filename = commandLine.argList.first()
+val filename: String = commandLine.argList.first()
 val center = getCenter(commandLine.getOptionValue("center"))
-val radius = commandLine.getOptionValue("radius")?.let { it.toDouble() } ?: 200.0
+val radius = commandLine.getOptionValue("radius")?.toDouble() ?: 200.0
 val groupBy = commandLine.getOptionValue("groupBy")?.let { GroupBy.valueOf(it) } ?: GroupBy.DAY
 val hideZeros = commandLine.hasOption("hideZeros")
 val verbose = commandLine.hasOption("verbose")
@@ -169,19 +169,19 @@ val verbose = commandLine.hasOption("verbose")
 val track = GPX.reader(GPX.Version.V10, GPX.Reader.Mode.LENIENT)
                .read(filename)
                .tracks
-               .filter { it.name.isPresent() && it.name.get() == "SM-G973F" }
+               .filter { it.name.isPresent && it.name.get() == "SM-G973F" }
 
 val window = CircularWindow(center, radius, LengthUnit.METER)
 
 val points = track.flatMap { it.segments }.flatMap { it.points }
 val groupedByDate = points.groupBy(groupBy.lambda)
 
-groupedByDate.forEach {
-    val pairs = durationInArea(it.value, window)
+groupedByDate.forEach { point ->
+    val pairs = durationInArea(point.value, window)
     val duration = pairs.map { between(it.first.time.get(), it.second.time.get()) }.sum()
 
-    if (!hideZeros || !duration.isZero()) {
-        println("${it.key}: ${duration.format()} (${it.value.size} Points)")
+    if (!hideZeros || !duration.isZero) {
+        println("${point.key}: ${duration.format()} (${point.value.size} Points)")
 
         if (verbose) {
             pairs.forEach {

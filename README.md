@@ -17,17 +17,17 @@ and it will tell you how much time you've spent there, grouped by day/hour/month
 Output will look like this:
 
 ```
-2019-07-15: PT5H53M1S (249 Points)
-	Enter: 2019-07-15T09:33:51Z Leave: 2019-07-15T10:44:58Z
-	Enter: 2019-07-15T11:30:38Z Leave: 2019-07-15T16:12:32Z
-2019-07-16: PT8H24M1S (441 Points)
-	Enter: 2019-07-16T07:54:04Z Leave: 2019-07-16T16:18:05Z
-2019-07-17: PT7H55M33S (471 Points)
-	Enter: 2019-07-17T07:57:32Z Leave: 2019-07-17T10:58:01Z
-	Enter: 2019-07-17T12:27:58Z Leave: 2019-07-17T17:23:02Z
-2019-07-19: PT8H50M57S (334 Points)
-	Enter: 2019-07-19T08:04:07Z Leave: 2019-07-19T10:36:30Z
-	Enter: 2019-07-19T10:51:31Z Leave: 2019-07-19T17:10:05Z
+2019-07-15: 05h 53m 01s (249 Points)
+	Enter: 2019-07-15 11:33:51 Leave: 2019-07-15 12:44:58
+	Enter: 2019-07-15 13:30:38 Leave: 2019-07-15 18:12:32
+2019-07-16: 08h 24m 01s (441 Points)
+	Enter: 2019-07-16 09:54:04 Leave: 2019-07-16 18:18:05
+2019-07-17: 07h 55m 33s (471 Points)
+	Enter: 2019-07-17 09:57:32 Leave: 2019-07-17 12:58:01
+	Enter: 2019-07-17 14:27:58 Leave: 2019-07-17 19:23:02
+2019-07-19: 08h 50m 57s (334 Points)
+	Enter: 2019-07-19 10:04:07 Leave: 2019-07-19 12:36:30
+	Enter: 2019-07-19 12:51:31 Leave: 2019-07-19 19:10:05
 ```
 
 # locations.yaml

@@ -11,6 +11,7 @@ import com.javadocmd.simplelatlng.window.*
 import io.jenetics.jpx.*
 import java.io.File
 import java.time.*
+import java.time.format.*
 import java.time.temporal.*
 import java.time.Duration.between
 import org.apache.commons.cli.*
@@ -112,6 +113,11 @@ fun latLngFrom(coordinates: String): LatLng {
     return LatLng(pair.first, pair.second)
 }
 
+fun ZonedDateTime.format(): String {
+    val formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")
+    return format(formatter)
+}
+
 fun getCenter(parameter: String): LatLng {
     fun loadLocationFromFile(): String? {
         val file = File("./locations.yaml")
@@ -166,7 +172,7 @@ groupedByDate.forEach {
 
         if (verbose) {
             pairs.forEach {
-                println("\tEnter: ${it.first.time.get()} Leave: ${it.second.time.get()}")
+                println("\tEnter: ${it.first.time.get().format()} Leave: ${it.second.time.get().format()}")
             }
         }
     }

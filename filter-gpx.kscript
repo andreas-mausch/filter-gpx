@@ -78,8 +78,7 @@ fun parseArguments(): CommandLine {
 }
 
 fun durationInArea(points: List<Point>, window: CircularWindow): List<Pair<Point,Point>> {
-    val sortedPoints = points.toMutableList()
-    sortedPoints.sortBy { it.time.get() }
+    val sortedPoints = points.sortedBy { it.time.get() }
 
     var entryPoint: Point? = null
     val pairs = mutableListOf<Pair<Point, Point>>()
